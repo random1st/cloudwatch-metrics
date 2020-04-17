@@ -1,0 +1,2 @@
+COUNT = "Count"
+MICROSECONDS = "Microseconds"
