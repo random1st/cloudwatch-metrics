@@ -8,11 +8,15 @@ import boto3
 
 from cloudwatch_metrics import units
 from cloudwatch_metrics.config import Config
+from cloudwatch_metrics.utils import chunks
 
 _LOGGER = logging.getLogger(__name__)
 
 
+
 class CloudwatchMetricRecorder:
+    default_limit = 20
+
     def __init__(
             self,
             config=Config(),
@@ -32,10 +36,6 @@ class CloudwatchMetricRecorder:
 
         self.__buffer = []
         self.__time = time.time()
-
-        import atexit  # pylint: disable=import-outside-toplevel
-
-        atexit.register(self.__del__)
 
     @property
     def session(self):
@@ -79,7 +79,7 @@ class CloudwatchMetricRecorder:
                 "MetricName": metric,
                 "Dimensions": [{"Name": metric, "Value": measurement}, ],
                 "Value": value,
-                "Unit": unit.value,
+                "Unit": unit,
                 "Timestamp": datetime.fromtimestamp(timestamp)
                 if timestamp
                 else datetime.utcnow(),
@@ -94,9 +94,10 @@ class CloudwatchMetricRecorder:
                 self.__time = current_time
 
     def _emit(self):
-        self.client.put_metric_data(
-            Namespace=self.config.namespace, MetricData=self.__buffer
-        )
+        for chunk in chunks(self.__buffer, self.default_limit):
+            self.client.put_metric_data(
+                Namespace=self.config.namespace, MetricData=chunk
+            )
         self.__buffer = []
 
     def timeit(self, metric_name=None):
@@ -122,9 +123,6 @@ class CloudwatchMetricRecorder:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._emit()
-
-    def __del__(self):
         self._emit()
 
 

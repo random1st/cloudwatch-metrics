@@ -1,12 +1,12 @@
-from os import path
+import os
 
 from setuptools import setup, find_packages
 
 from cloudwatch_metrics.version import VERSION
 
-CURRENT_DIR = path.abspath(path.dirname(__file__))
-
-long_description = read_md(path.join(CURRENT_DIR, 'README.md'))
+with open(os.path.join(os.path.dirname(__file__),
+                       'README.md')) as readme:
+    README = readme.read()
 
 setup(
     name='cloudwatch_metrics',
@@ -14,7 +14,7 @@ setup(
 
     description='The Cloudwatch Metrics package enables Python developers to record'
                 ' and emit information from within their applications to the Cloudwatch service.',
-    long_description=long_description,
+    long_description=README,
     long_description_content_type='text/markdown',
 
     url='https://github.com/random1st/cloudwatch-metrics',
@@ -34,8 +34,9 @@ setup(
     ],
 
     install_requires=[
-        'boto3',
-        'aibotocore',
+        'aiobotocore',
+        'boto3<=1.12.32',
+        'async-property'
     ],
 
     keywords='aws cloudwatch metrics',

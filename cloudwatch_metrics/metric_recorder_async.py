@@ -8,11 +8,15 @@ import aiobotocore
 
 from cloudwatch_metrics import units
 from cloudwatch_metrics.config import Config
+from cloudwatch_metrics.utils import chunks
 
 _LOGGER = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 
 class CloudwatchMetricRecorderAsync:
+    default_limit = 20
+
     def __init__(
             self,
             config=Config(),
@@ -33,10 +37,6 @@ class CloudwatchMetricRecorderAsync:
         self.__buffer = []
         self.__time = time.time()
 
-        import atexit  # pylint: disable=import-outside-toplevel
-
-        atexit.register(self.__del__)
-
     @property
     def session(self):
         if self._session is None:
@@ -54,20 +54,19 @@ class CloudwatchMetricRecorderAsync:
                 }
                 if os.environ.get("AWS_SESSION_TOKEN"):
                     kwargs["aws_session_token"] = os.environ.get("AWS_SESSION_TOKEN")
-                    self._session = aiobotocore.AioSession(**kwargs)
+                    self._session = aiobotocore.get_session(**kwargs)
                 else:
                     _LOGGER.debug("Load default aiobotocore  session")
-                    self._session = aiobotocore.AioSession()
+                    self._session = aiobotocore.get_session()
         return self._session
 
     @property
     def client(self, *args, **kwargs):
-        if self._client is None:
-            _LOGGER.debug("Create CloudWatchClient")
-            if self.endpoint_url:
-                _LOGGER.debug("Use custom endpoint, %s", self.endpoint_url)
-                kwargs.update(endpoint_url=self.endpoint_url)
-            self._client = self.session.client("cloudwatch", *args, **kwargs)
+        _LOGGER.debug("Create CloudWatchClient")
+        if self.endpoint_url:
+            _LOGGER.debug("Use custom endpoint, %s", self.endpoint_url)
+            kwargs.update(endpoint_url=self.endpoint_url)
+        self._client = self.session.create_client("cloudwatch", *args, **kwargs)
         return self._client
 
     async def put_metric(self, metric, measurement, value, unit, timestamp=None):
@@ -76,7 +75,7 @@ class CloudwatchMetricRecorderAsync:
                 "MetricName": metric,
                 "Dimensions": [{"Name": metric, "Value": measurement}, ],
                 "Value": value,
-                "Unit": unit.value,
+                "Unit": unit,
                 "Timestamp": datetime.fromtimestamp(timestamp)
                 if timestamp
                 else datetime.utcnow(),
@@ -91,11 +90,12 @@ class CloudwatchMetricRecorderAsync:
                 self.__time = current_time
 
     async def _emit(self):
-        with self.client:
-            await self.client.put_metric_data(
-                Namespace=self.config.namespace, MetricData=self.__buffer
-            )
-            self.__buffer = []
+        async with self.client as client:
+            for chunk in chunks(self.__buffer, self.default_limit):
+                await client.put_metric_data(
+                    Namespace=self.config.namespace, MetricData=chunk
+                )
+        self.__buffer = []
 
     async def timeit(self, metric_name=None):
         async def wrapper(func):
@@ -116,14 +116,11 @@ class CloudwatchMetricRecorderAsync:
 
         return wrapper
 
-    def __aenter__(self):
+    async def __aenter__(self):
         return self
 
-    def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self._emit()
-
-    def __del__(self):
-        self._emit()
 
 
 cloudwatch_metric_recorder = CloudwatchMetricRecorderAsync()
