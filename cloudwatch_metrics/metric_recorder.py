@@ -13,7 +13,6 @@ from cloudwatch_metrics.utils import chunks
 _LOGGER = logging.getLogger(__name__)
 
 
-
 class CloudwatchMetricRecorder:
     default_limit = 20
 
@@ -60,7 +59,8 @@ class CloudwatchMetricRecorder:
                 else:
                     _LOGGER.debug("Load default boto3  session")
                     self._session = boto3.Session(region_name=self.region)
-            self.region = self.session.region_name
+                # TODO session recursion in case it can't setup
+                self.region = self.session.region_name
         return self._session
 
     @property
@@ -96,11 +96,12 @@ class CloudwatchMetricRecorder:
     def _emit(self):
         for chunk in chunks(self.__buffer, self.default_limit):
             self.client.put_metric_data(
-                Namespace=self.config.namespace, MetricData=chunk
+                Namespace=self.config.namespace,
+                MetricData=chunk
             )
         self.__buffer = []
 
-    def timeit(self, metric_name=None):
+    def timeit(self, func, metric_name=None):
         def wrapper(func):
             @wraps(func)
             def wrapped(*f_args, **f_kwargs):
