@@ -1,8 +1,11 @@
+import logging
 import time
+import botocore.exceptions as btc_exc
 
 from cloudwatch_metrics.units import COUNT, MICROSECONDS
 from cloudwatch_metrics.metric_recorder import CloudwatchMetricRecorder
 
+_LOGGER = logging.getLogger(__name__)
 
 METRICS_MAPPING = {
     '2': ['2xx', 'responses-2xx-quantity', 1, COUNT],
@@ -29,5 +32,6 @@ class CloudWatchMiddleware:
                 recorder.put_metric(REQUEST_TIME_METRIC_NAME, REQUEST_TIME_MEASUREMENT, delta, MICROSECONDS)
             except KeyError:
                 pass
-
+            except (btc_exc.ClientError, btc_exc.ParamValidationError) as exc:
+                _LOGGER.error("Can't perform metrics put %s", str(exc))
         return response
