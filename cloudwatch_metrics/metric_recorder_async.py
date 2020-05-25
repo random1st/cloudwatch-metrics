@@ -54,10 +54,10 @@ class CloudwatchMetricRecorderAsync:
                 }
                 if os.environ.get("AWS_SESSION_TOKEN"):
                     kwargs["aws_session_token"] = os.environ.get("AWS_SESSION_TOKEN")
-                    self._session = aiobotocore.get_session(**kwargs)
-                else:
-                    _LOGGER.debug("Load default aiobotocore  session")
-                    self._session = aiobotocore.get_session()
+                self._session = aiobotocore.get_session(kwargs)
+            else:
+                _LOGGER.debug("Load default aiobotocore  session")
+                self._session = aiobotocore.get_session()
         return self._session
 
     @property
