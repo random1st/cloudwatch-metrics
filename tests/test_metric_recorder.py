@@ -1,52 +1,32 @@
 import boto3
-
-
-class MockConfig:
-    from cloudwatch_metrics.config import Config
-    config = Config(namespace='test', buffer_size=1)
-
-class MockClass:
-
-    __name__ = "name"
-
-    def __call__(self, test):
-        print
-        'called'
+from .conftest import MockClass
+from .conftest import MockMetrics
+from .conftest import MockAwsCredentials
 
 class TestMetricRecorder:
 
-    region = "us-east-1"
-    service = "cloudwatch"
-    mock_put_metric_name = "Metric"
-    mock_put_metric_value = 1.5
-    mock_put_metric_unit = "Count"
-    mock_put_metric_d_value = "1.5"
-    endpoint_url = "http://127.0.0.1:4582"
-    service = "cloudwatch"
-
-
-    def test_put_metric(self, monkeypatch):
+    def test_put_metric(self, monkeypatch, mockConfig):
         from cloudwatch_metrics.metric_recorder import CloudwatchMetricRecorder
-        mock_client = boto3.client(self.service, region_name=self.region, endpoint_url=self.endpoint_url)
+        mock_client = boto3.client(MockAwsCredentials.service, region_name=MockAwsCredentials.region, endpoint_url=MockAwsCredentials.endpoint_url)
         monkeypatch.setattr(CloudwatchMetricRecorder, "client", mock_client)
-        CloudwatchMetricRecorder(config=MockConfig().config).put_metric(self.mock_put_metric_name, self.mock_put_metric_d_value, self.mock_put_metric_value, self.mock_put_metric_unit)
+        CloudwatchMetricRecorder(config=mockConfig).put_metric(MockMetrics.mock_put_metric_name, MockMetrics.mock_put_metric_d_value, MockMetrics.mock_put_metric_value, MockMetrics.mock_put_metric_unit)
 
         metrics = mock_client.list_metrics()["Metrics"]
         metric = metrics[0]
-        assert metric["Namespace"] == MockConfig.config.namespace
-        assert metric["MetricName"] == self.mock_put_metric_name
-        assert metric["Dimensions"][0]["Value"] == self.mock_put_metric_d_value
-        assert metric["Dimensions"][0]["Name"] == self.mock_put_metric_name
+        assert metric["Namespace"] == mockConfig.namespace
+        assert metric["MetricName"] == MockMetrics.mock_put_metric_name
+        assert metric["Dimensions"][0]["Value"] == MockMetrics.mock_put_metric_d_value
+        assert metric["Dimensions"][0]["Name"] == MockMetrics.mock_put_metric_name
 
-    def test_timeit(self, monkeypatch):
+    def test_timeit(self, monkeypatch, mockConfig):
         from cloudwatch_metrics.metric_recorder import CloudwatchMetricRecorder
-        mock_client = boto3.client(self.service, region_name=self.region, endpoint_url=self.endpoint_url)
+        mock_client = boto3.client(MockAwsCredentials.service, region_name=MockAwsCredentials.region, endpoint_url=MockAwsCredentials.endpoint_url)
         monkeypatch.setattr(CloudwatchMetricRecorder, "client", mock_client)
-        CloudwatchMetricRecorder(config=MockConfig().config).timeit(MockClass())(MockClass())(MockClass())
+        CloudwatchMetricRecorder(config=mockConfig).timeit(MockClass())(MockClass())(MockClass())
 
         metrics = mock_client.list_metrics()["Metrics"]
         metric = metrics[1]
-        assert metric["Namespace"] == MockConfig.config.namespace
+        assert metric["Namespace"] == mockConfig.namespace
         assert metric["MetricName"] == MockClass().__name__
         assert metric["Dimensions"][0]["Name"] == MockClass().__name__
 
