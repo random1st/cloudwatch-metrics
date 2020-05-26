@@ -44,9 +44,7 @@ class CloudwatchMetricRecorder:
                 self._session = boto3.Session(
                     profile_name=self.profile, region_name=self.region
                 )
-            elif os.environ.get("AWS_ACCESS_KEY_ID") and os.environ.get(
-                    "AWS_SECRET_ACCESS_KEY"
-            ):
+            elif os.environ.get("AWS_ACCESS_KEY_ID") and os.environ.get("AWS_SECRET_ACCESS_KEY"):
                 _LOGGER.debug("Load boto3 session from environment")
                 kwargs = {
                     "aws_access_key_id": os.environ.get("AWS_ACCESS_KEY_ID"),
@@ -55,12 +53,12 @@ class CloudwatchMetricRecorder:
                 }
                 if os.environ.get("AWS_SESSION_TOKEN"):
                     kwargs["aws_session_token"] = os.environ.get("AWS_SESSION_TOKEN")
-                    self._session = boto3.Session(**kwargs)
-                else:
-                    _LOGGER.debug("Load default boto3  session")
-                    self._session = boto3.Session(region_name=self.region)
-                # TODO session recursion in case it can't setup
-                self.region = self.session.region_name
+                self._session = boto3.Session(**kwargs)
+            else:
+                _LOGGER.debug("Load default boto3  session")
+                self._session = boto3.Session(region_name=self.region)
+
+            self.region = self.session.region_name
         return self._session
 
     @property
