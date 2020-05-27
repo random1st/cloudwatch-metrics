@@ -1,14 +1,15 @@
 language: python
+sudo: required
 python:
   - "3.8"
-
-install:
-  - pip install --upgrade setuptools wheel
-  - python3 setup.py sdist bdist_wheel
-
+services:
+  - docker
 script:
-    - echo "Tests TBD"
-
+- pip  install --upgrade setuptools wheel boto3 aioboto3 moto pytest requests pytest-asyncio
+- pip install -q localstack; docker pull localstack/localstack; localstack start --docker
+  & sleep 30
+- export AWS_ACCESS_KEY_ID=foobar AWS_SECRET_ACCESS_KEY=foobar AWS_DEFAULT_REGION=us-east-1
+- pytest tests
 deploy:
   provider: pypi
   user: __token__
