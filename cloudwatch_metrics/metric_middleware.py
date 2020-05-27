@@ -3,7 +3,7 @@ import time
 import botocore.exceptions as btc_exc
 
 from cloudwatch_metrics.units import COUNT, MICROSECONDS
-from cloudwatch_metrics.metric_recorder import CloudwatchMetricRecorder
+from cloudwatch_metrics.metric_recorder import cloudwatch_metric_recorder
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class CloudWatchMiddleware:
         start_time = time.time()
         response = self.get_response(request)
         delta = (time.time() - start_time) * 1e6
-        with CloudwatchMetricRecorder() as recorder:
+        with cloudwatch_metric_recorder as recorder:
             try:
                 metric_config = METRICS_MAPPING[str(response.status_code)[0]]
                 recorder.put_metric(*metric_config)
