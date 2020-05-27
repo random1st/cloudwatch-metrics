@@ -43,18 +43,6 @@ class CloudwatchMetricRecorderAsync:
             if self.profile:
                 _LOGGER.debug("Load aiobotocore session from profile %s", self.profile)
                 self._session = aiobotocore.AioSession(profile=self.profile)
-            elif os.environ.get("AWS_ACCESS_KEY_ID") and os.environ.get(
-                    "AWS_SECRET_ACCESS_KEY"
-            ):
-                _LOGGER.debug("Load aiobotocore session from environment")
-                kwargs = {
-                    "aws_access_key_id": os.environ.get("AWS_ACCESS_KEY_ID"),
-                    "aws_secret_access_key": os.environ.get("AWS_SECRET_ACCESS_KEY"),
-                    "region_name": os.getenv("AWS_DEFAULT_REGION", self.region),
-                }
-                if os.environ.get("AWS_SESSION_TOKEN"):
-                    kwargs["aws_session_token"] = os.environ.get("AWS_SESSION_TOKEN")
-                self._session = aiobotocore.get_session(kwargs)
             else:
                 _LOGGER.debug("Load default aiobotocore  session")
                 self._session = aiobotocore.get_session()
@@ -66,6 +54,17 @@ class CloudwatchMetricRecorderAsync:
         if self.endpoint_url:
             _LOGGER.debug("Use custom endpoint, %s", self.endpoint_url)
             kwargs.update(endpoint_url=self.endpoint_url)
+
+        if os.environ.get("AWS_ACCESS_KEY_ID") and os.environ.get("AWS_SECRET_ACCESS_KEY"):
+            _LOGGER.debug("Received credentials from environment")
+            kwargs.update({
+                "aws_access_key_id": os.environ.get("AWS_ACCESS_KEY_ID"),
+                "aws_secret_access_key": os.environ.get("AWS_SECRET_ACCESS_KEY"),
+                "region_name": os.getenv("AWS_DEFAULT_REGION", self.region),
+            })
+            if os.environ.get("AWS_SESSION_TOKEN"):
+                kwargs["aws_session_token"] = os.environ.get("AWS_SESSION_TOKEN")
+
         self._client = self.session.create_client("cloudwatch", *args, **kwargs)
         return self._client
 
