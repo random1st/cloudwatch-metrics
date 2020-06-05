@@ -1,0 +1,20 @@
+language: python
+sudo: required
+python:
+  - "3.8"
+services:
+  - docker
+script:
+- pip  install --upgrade setuptools wheel boto3 aioboto3 moto pytest requests pytest-asyncio
+- pip install -q localstack; docker pull localstack/localstack; localstack start --docker
+  & sleep 30
+- export AWS_ACCESS_KEY_ID=foobar AWS_SECRET_ACCESS_KEY=foobar AWS_DEFAULT_REGION=us-east-1
+- pytest tests
+deploy:
+  provider: pypi
+  user: __token__
+  password:
+    secure: XfmUtnGgqnY61wS61uy4LenQ/3tIi8CYaeNHG7yWGwKgPr2AzKCU1RyI8SjEB0TUbEWsmUpEhqZLitCWewY0/3atFV44NUfIlVbZnTYvqo65YUiPXGf02gDWghs2i0vtDU/LeWLchITElxthRTAbw6H+wCvl7ZjoxHwXLxq7cG7T1fP0lkAN27mqZjiHUM3xB+/QmWpBJ66xh7vukKrhvEpg049W8nwJ6NV7oaajPbnOS75+dr3/O5VQDVkN03B6eTGiuVn1JIGZVUmQBYsOSkGEACBVh0SnBCBDA75dxAdoULTccEsBVqpj26g8DhLo+/QYpeZuHxzxYsI8SnWGiNMy9/yw5zzHAc8oG5Mg+01JqkPT5RpjNSNTOgix7/fEXpcRB/dRTEwaNI/1P0LfwDEanaFP4Xv/MGR/noH6mXhM6FHj0FoVJK8xkF2is9MWNElAgvL0wNDKDF2kCruUw9/TpJXcs1C3xHUHV3VXsdEsP+TbczT6rHXR+IAXeXCpelWv52RfScHKd5EWLUhdUxTDimq/bhonHCK5bfbl8HawgcyQL0mvGNdNwHD73E46QmUWieOf2AXmI96xs2y3GcjuSRmVLfXKzdCaWoVsjsu+vgQ5buj3MqxPnqlTWWVOa2KOUaareDNjk0EaidCP4e2gBpq+75kGYbgdfp2YsEA=
+  on:
+    tags: true
+    python: 3.8
