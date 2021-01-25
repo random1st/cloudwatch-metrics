@@ -1,6 +1,6 @@
 import pytest
 
-@pytest.fixture("module")
+@pytest.fixture(scope="module")
 def mockConfig():
     from cloudwatch_metrics.config import Config
     yield Config(namespace='test', buffer_size=1)
@@ -14,7 +14,7 @@ class MockMetrics():
 class MockAwsCredentials():
     region = "us-east-1"
     service = "cloudwatch"
-    endpoint_url = "http://127.0.0.1:4582"
+    endpoint_url = "http://127.0.0.1:4566"
     service = "cloudwatch"
 
 
