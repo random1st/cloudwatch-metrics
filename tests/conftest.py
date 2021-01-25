@@ -1,6 +1,6 @@
 import pytest
 
-@pytest.fixture("module")
+@pytest.fixture(scope="module")
 def mockConfig():
     from cloudwatch_metrics.config import Config
     yield Config(namespace='test', buffer_size=1)
