@@ -33,7 +33,7 @@ setup(
 
     install_requires=[
         'aiobotocore',
-        'boto3<=1.12.32',
+        'boto3<=1.16.52',
         'async-property'
     ],
 
